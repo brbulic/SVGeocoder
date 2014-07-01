@@ -13,12 +13,6 @@
 
 #import "SVPlacemark.h"
 
-#define SVGeocoderComponentRoute     @"route"
-#define SVGeocoderComponentLocality  @"locality"
-#define SVGeocoderAdministrativeArea @"administrative_area"
-#define SVGeocoderPostalCode         @"postal_code"
-#define SVGeocoderCountry            @"country"
-
 typedef enum {
 	SVGeocoderZeroResultsError = 1,
 	SVGeocoderOverQueryLimitError,
@@ -32,30 +26,12 @@ typedef void (^SVGeocoderCompletionHandler)(NSArray *placemarks, NSHTTPURLRespon
 
 @interface SVGeocoder : NSOperation
 
-// Set static Google Maps API Key for all requests.
-// The key will be included in the request if it's
-// not nil.
-+ (void)setGoogleMapsAPIKey:(NSString*)key;
-
-+ (SVGeocoder*)geocode:(NSString *)address completion:(SVGeocoderCompletionHandler)block;
-
-+ (SVGeocoder*)geocode:(NSString *)address region:(CLRegion *)region completion:(SVGeocoderCompletionHandler)block;
-+ (SVGeocoder*)geocode:(NSString *)address components:(NSDictionary *)components completion:(SVGeocoderCompletionHandler)block;
-+ (SVGeocoder*)geocode:(NSString *)address region:(CLRegion *)region components:(NSDictionary *)components completion:(SVGeocoderCompletionHandler)block;
-
 + (SVGeocoder*)reverseGeocode:(CLLocationCoordinate2D)coordinate completion:(SVGeocoderCompletionHandler)block;
++ (SVGeocoder*)reverseGeocode:(CLLocationCoordinate2D)coordinate useLocale:(NSLocale *)locale completion:(SVGeocoderCompletionHandler)block;
 
-- (SVGeocoder*)initWithAddress:(NSString *)address completion:(SVGeocoderCompletionHandler)block;
-
-- (SVGeocoder*)initWithAddress:(NSString *)address region:(CLRegion *)region completion:(SVGeocoderCompletionHandler)block;
-- (SVGeocoder*)initWithAddress:(NSString *)address components:(NSDictionary *)components completion:(SVGeocoderCompletionHandler)block;
-- (SVGeocoder*)initWithAddress:(NSString *)address region:(CLRegion *)region components:(NSDictionary *)components completion:(SVGeocoderCompletionHandler)block;
-
-
-- (SVGeocoder*)initWithCoordinate:(CLLocationCoordinate2D)coordinate completion:(SVGeocoderCompletionHandler)block;
+- (SVGeocoder*)initWithCoordinate:(CLLocationCoordinate2D)coordinate forLocale:(NSLocale *)locale completion:(SVGeocoderCompletionHandler)block;
 
 - (void)start;
-
 - (void)cancel;
 
 @end

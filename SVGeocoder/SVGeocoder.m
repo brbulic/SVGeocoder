@@ -9,7 +9,6 @@
 //
 
 #import "SVGeocoder.h" 
-#import <MapKit/MapKit.h>
 
 #define kSVGeocoderTimeoutInterval 20
 
@@ -20,7 +19,7 @@ enum {
 };
 
 typedef NSUInteger SVGeocoderState;
-static NSString *googleMapsAPIKey;
+
 
 @interface NSString (URLEncoding)
 - (NSString*)encodedURLParameterString;
@@ -39,16 +38,12 @@ static NSString *googleMapsAPIKey;
 @property (nonatomic, strong) NSString *requestPath;
 @property (nonatomic, strong) NSTimer *timeoutTimer; // see http://stackoverflow.com/questions/2736967
 
-- (SVGeocoder*)initWithParameters:(NSMutableDictionary*)parameters completion:(SVGeocoderCompletionHandler)block;
+- (SVGeocoder*)initWithParameters:(NSMutableDictionary*)parameters withLocale:(NSLocale *)locale completion:(SVGeocoderCompletionHandler)block;
 
 - (void)addParametersToRequest:(NSMutableDictionary*)parameters;
-
 - (void)finish;
-- (NSString*)createComponentsStringFromDictionary:(NSDictionary *)components;
-- (NSString*)createBoundsStringFromRegion:(CLRegion *)region;
 
 - (void)connection:(NSURLConnection *)connection didFailWithError:(NSError *)error;
-
 - (void)callCompletionBlockWithResponse:(id)response error:(NSError *)error;
 
 @end
@@ -71,106 +66,39 @@ static NSString *googleMapsAPIKey;
 
 #pragma mark - Convenience Initializers
 
-+ (SVGeocoder *)geocode:(NSString *)address completion:(SVGeocoderCompletionHandler)block {
-    SVGeocoder *geocoder = [[self alloc] initWithAddress:address completion:block];
-    [geocoder start];
-    return geocoder;
-}
-
-+ (SVGeocoder *)geocode:(NSString *)address region:(CLRegion *)region completion:(SVGeocoderCompletionHandler)block {
-    SVGeocoder *geocoder = [[self alloc] initWithAddress:address region:region completion:block];
-    [geocoder start];
-    return geocoder;
-}
-
-+ (SVGeocoder*)geocode:(NSString *)address components:(NSDictionary *)components completion:(SVGeocoderCompletionHandler)block {
-    SVGeocoder *geocoder = [[self alloc] initWithAddress:address components:components completion:block];
-    [geocoder start];
-    return geocoder;
-}
-
-+ (SVGeocoder*)geocode:(NSString *)address region:(CLRegion *)region components:(NSDictionary *)components completion:(SVGeocoderCompletionHandler)block {
-    SVGeocoder *geocoder = [[self alloc] initWithAddress:address region:region components:components completion:block];
-    [geocoder start];
-    return geocoder;
-}
-
 + (SVGeocoder *)reverseGeocode:(CLLocationCoordinate2D)coordinate completion:(SVGeocoderCompletionHandler)block {
-    SVGeocoder *geocoder = [[self alloc] initWithCoordinate:coordinate completion:block];
+    NSLocale * currentLocale = [NSLocale currentLocale];
+    
+    SVGeocoder *geocoder = [[self alloc] initWithCoordinate:coordinate forLocale:currentLocale completion:block];
     [geocoder start];
     return geocoder;
 }
 
-+ (void)setGoogleMapsAPIKey:(NSString *)key {
-
-    googleMapsAPIKey = [key copy];
-    
++ (SVGeocoder *)reverseGeocode:(CLLocationCoordinate2D)coordinate useLocale:(NSLocale *)locale completion:(SVGeocoderCompletionHandler)block {
+    SVGeocoder *geocoder = [[self alloc] initWithCoordinate:coordinate forLocale:locale completion:block];
+    [geocoder start];
+    return geocoder;
 }
 
 #pragma mark - Public Initializers
 
-- (SVGeocoder*)initWithCoordinate:(CLLocationCoordinate2D)coordinate completion:(SVGeocoderCompletionHandler)block {
+- (SVGeocoder*)initWithCoordinate:(CLLocationCoordinate2D)coordinate forLocale:(NSLocale *)locale completion:(SVGeocoderCompletionHandler)block {
     NSMutableDictionary *parameters = [NSMutableDictionary dictionaryWithObjectsAndKeys: 
                                        [NSString stringWithFormat:@"%f,%f", coordinate.latitude, coordinate.longitude], @"latlng", nil];
     
-    return [self initWithParameters:parameters completion:block];
-}
-
-
-- (SVGeocoder*)initWithAddress:(NSString*)address completion:(SVGeocoderCompletionHandler)block {
-    NSMutableDictionary *parameters = [NSMutableDictionary dictionaryWithObjectsAndKeys: 
-                                       address, @"address", nil];
-    
-    return [self initWithParameters:parameters completion:block];
-}
-
-- (SVGeocoder*)initWithAddress:(NSString *)address region:(CLRegion *)region completion:(SVGeocoderCompletionHandler)block {
-    NSString *bounds = [self createBoundsStringFromRegion:region];
-    
-    NSMutableDictionary *parameters = [NSMutableDictionary dictionaryWithObjectsAndKeys: 
-                                       address, @"address", 
-                                       bounds,  @"bounds", nil];
-    
-    return [self initWithParameters:parameters completion:block];
-}
-
-- (SVGeocoder*)initWithAddress:(NSString *)address components:(NSDictionary *)components completion:(SVGeocoderCompletionHandler)block {
-    NSString *componentsValue = [self createComponentsStringFromDictionary:components];
-    
-    NSMutableDictionary *parameters = [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                       address,         @"address",
-                                       componentsValue, @"components", nil];
-    
-    return [self initWithParameters:parameters completion:block];
-}
-
-- (SVGeocoder*)initWithAddress:(NSString *)address region:(CLRegion *)region components:(NSDictionary *)components completion:(SVGeocoderCompletionHandler)block {
-    NSString *bounds = [self createBoundsStringFromRegion:region];
-    NSString *componentsValue = [self createComponentsStringFromDictionary:components];
-    
-    NSMutableDictionary *parameters = [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                       address,         @"address",
-                                       bounds,          @"bounds",
-                                       componentsValue, @"components", nil];
-    
-    return [self initWithParameters:parameters completion:block];
+    return [self initWithParameters:parameters withLocale:locale completion:block];
 }
 
 #pragma mark - Private Utility Methods
 
-- (SVGeocoder*)initWithParameters:(NSMutableDictionary*)parameters completion:(SVGeocoderCompletionHandler)block {
+- (SVGeocoder*)initWithParameters:(NSMutableDictionary*)parameters withLocale:(NSLocale *)locale completion:(SVGeocoderCompletionHandler)block {
     self = [super init];
     self.operationCompletionBlock = block;
-    self.operationRequest = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:@"https://maps.googleapis.com/maps/api/geocode/json"]];
+    self.operationRequest = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:@"http://maps.googleapis.com/maps/api/geocode/json"]];
     [self.operationRequest setTimeoutInterval:kSVGeocoderTimeoutInterval];
 
     [parameters setValue:@"true" forKey:@"sensor"];
-    [parameters setValue:[NSLocale preferredLanguages][0] forKey:@"language"];
-    
-    if (googleMapsAPIKey) {
-        [parameters setValue:googleMapsAPIKey forKey:@"key"];
-    }
-    
+    [parameters setValue:[locale objectForKey:NSLocaleLanguageCode] forKey:@"language"];
     [self addParametersToRequest:parameters];
         
     self.state = SVGeocoderStateReady;
@@ -206,35 +134,10 @@ static NSString *googleMapsAPIKey;
         timeoutTimer = newTimer;
 }
 
-- (NSString*)createComponentsStringFromDictionary:(NSDictionary *)components {
-    NSMutableArray *preparedComponents = [NSMutableArray new];
-    
-    [components enumerateKeysAndObjectsUsingBlock:^(NSString* key, NSString* value, BOOL *stop) {
-        NSString *component = [NSString stringWithFormat:@"%@:%@", key, value];
-        [preparedComponents addObject:component];
-    }];
-    
-    NSString *componentsValue = [preparedComponents componentsJoinedByString:@"|"];
-    
-    return componentsValue;
-}
-
-- (NSString*)createBoundsStringFromRegion:(CLRegion *)region {
-    MKCoordinateRegion coordinateRegion = MKCoordinateRegionMakeWithDistance(region.center, region.radius, region.radius);
-    
-    NSString *bounds = [NSString stringWithFormat:@"%f,%f|%f,%f",
-                         coordinateRegion.center.latitude-(coordinateRegion.span.latitudeDelta/2.0),
-                         coordinateRegion.center.longitude-(coordinateRegion.span.longitudeDelta/2.0),
-                         coordinateRegion.center.latitude+(coordinateRegion.span.latitudeDelta/2.0),
-                        coordinateRegion.center.longitude+(coordinateRegion.span.longitudeDelta/2.0)];
-    
-    return bounds;
-}
-
 #pragma mark - NSOperation methods
 
 - (void)start {
-    
+        
     if(self.isCancelled) {
         [self finish];
         return;

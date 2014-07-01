@@ -9,7 +9,7 @@
 //
 
 #import <Foundation/Foundation.h>
-#import <MapKit/MapKit.h>
+#import <CoreLocation/CoreLocation.h>
 
 @interface SVPlacemark : NSObject
 
@@ -29,7 +29,6 @@
 @property (nonatomic, strong, readonly) NSString *ISOcountryCode;
 
 @property (nonatomic, readonly) CLLocationCoordinate2D coordinate;
-@property (nonatomic, readonly) MKCoordinateRegion region;
 @property (nonatomic, strong, readonly) CLLocation *location;
 
 @end

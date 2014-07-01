@@ -25,7 +25,6 @@
 @property (nonatomic, strong, readwrite) NSString *ISOcountryCode;
 
 @property (nonatomic, readwrite) CLLocationCoordinate2D coordinate;
-@property (nonatomic, readwrite) MKCoordinateRegion region;
 @property (nonatomic, strong, readwrite) CLLocation *location;
 
 @end
@@ -33,7 +32,7 @@
 
 @implementation SVPlacemark
 
-@synthesize formattedAddress, subThoroughfare, thoroughfare, subLocality, locality, subAdministrativeArea, administrativeArea, administrativeAreaCode, postalCode, country, ISOcountryCode, coordinate, location, region;
+@synthesize formattedAddress, subThoroughfare, thoroughfare, subLocality, locality, subAdministrativeArea, administrativeArea, administrativeAreaCode, postalCode, country, ISOcountryCode, coordinate, location;
 
 - (id)initWithDictionary:(NSDictionary *)result {
     
@@ -76,23 +75,12 @@
         }];
         
         NSDictionary *locationDict = [[result objectForKey:@"geometry"] objectForKey:@"location"];
-        NSDictionary *boundsDict = [[result objectForKey:@"geometry"] objectForKey:@"bounds"];
         
         CLLocationDegrees lat = [[locationDict objectForKey:@"lat"] doubleValue];
         CLLocationDegrees lng = [[locationDict objectForKey:@"lng"] doubleValue];
         self.coordinate = CLLocationCoordinate2DMake(lat, lng);
         self.location = [[CLLocation alloc] initWithLatitude:lat longitude:lng];
-        
-        NSDictionary *northEastDict = [boundsDict objectForKey:@"northeast"];
-        NSDictionary *southWestDict = [boundsDict objectForKey:@"southwest"];
-        CLLocationDegrees northEastLatitude = [[northEastDict objectForKey:@"lat"] doubleValue];
-        CLLocationDegrees southWestLatitude = [[southWestDict objectForKey:@"lat"] doubleValue];
-        CLLocationDegrees latitudeDelta = fabs(northEastLatitude - southWestLatitude);
-        CLLocationDegrees northEastLongitude = [[northEastDict objectForKey:@"lng"] doubleValue];
-        CLLocationDegrees southWestLongitude = [[southWestDict objectForKey:@"lng"] doubleValue];
-        CLLocationDegrees longitudeDelta = fabs(northEastLongitude - southWestLongitude);
-        MKCoordinateSpan span = MKCoordinateSpanMake(latitudeDelta, longitudeDelta);
-        self.region = MKCoordinateRegionMake(self.location.coordinate, span);
+
     }
     
     return self;
